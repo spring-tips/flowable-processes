@@ -12,13 +12,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.Map;
 
 
-@SpringBootTest
 @Slf4j
+@SpringBootTest
 public class FlowableApplicationTests {
-
-
-    @Autowired
-    private HistoryService historyService;
 
     @Autowired
     private RuntimeService runtimeService;
