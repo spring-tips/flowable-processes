@@ -46,12 +46,9 @@ public class FlowableApplicationTests {
         Assertions.assertEquals(this.emailService.getSendCount(email).get(), 1);
     }
 
-
     private String beginCustomerEnrollmentProcess(String customerId, String email) {
         var vars = Map.of("customerId", (Object) customerId, "email", (Object) email);
         var processInstance = this.runtimeService.startProcessInstanceByKey("signup-process", vars);
         return processInstance.getId();
     }
-
-
 }

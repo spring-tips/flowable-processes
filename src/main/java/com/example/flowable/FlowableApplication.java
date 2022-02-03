@@ -30,8 +30,5 @@ class EmailService {
         log.info("sending welcome email for " + customerId + " to " + email);
         sends.computeIfAbsent(email, e -> new AtomicInteger());
         sends.get(email).incrementAndGet();
-
     }
-
-
 }
