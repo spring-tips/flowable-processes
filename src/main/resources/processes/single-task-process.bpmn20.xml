@@ -11,18 +11,18 @@
 
         <startEvent id="start" flowable:initiator="initiator"/>
 
-        <sequenceFlow sourceRef="start" targetRef="confirm-email-task"/>
+            <sequenceFlow sourceRef="start" targetRef="confirm-email-task"/>
 
         <userTask id="confirm-email-task" name="confirm-email-task"
                   flowable:assignee="${initiator}"/>
 
-        <sequenceFlow sourceRef="confirm-email-task"
-                      targetRef="send-welcome-email-task"/>
+            <sequenceFlow sourceRef="confirm-email-task"
+                          targetRef="send-welcome-email-task"/>
 
         <serviceTask id="send-welcome-email-task"
                      flowable:expression="#{emailService.sendWelcomeEmail(customerId, email)}"/>
 
-        <sequenceFlow sourceRef="send-welcome-email-task" targetRef="end"/>
+            <sequenceFlow sourceRef="send-welcome-email-task" targetRef="end"/>
 
         <endEvent id="end"/>
 

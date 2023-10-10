@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:15.2
+    environment:
+      - POSTGRES_USER=flowable
+      - POSTGRES_DB=flowable
+      - POSTGRES_PASSWORD=flowable
+    ports:
+      - "5432:5432"

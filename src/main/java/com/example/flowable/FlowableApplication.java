@@ -1,6 +1,5 @@
 package com.example.flowable;
 
-import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Service;
@@ -16,7 +15,7 @@ public class FlowableApplication {
     }
 }
 
-@Log4j2
+
 @Service
 class EmailService {
 
@@ -27,7 +26,7 @@ class EmailService {
     }
 
     public void sendWelcomeEmail(String customerId, String email) {
-        log.info("sending welcome email for " + customerId + " to " + email);
+        System.out.println("sending welcome email for " + customerId + " to " + email);
         sends.computeIfAbsent(email, e -> new AtomicInteger());
         sends.get(email).incrementAndGet();
     }
