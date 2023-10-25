@@ -22,6 +22,7 @@
     <properties>
         <flowable.version>7.0.0</flowable.version>
         <java.version>17</java.version>
+        <reflections.version>0.10.2</reflections.version>
     </properties>
 
     <dependencies>
@@ -47,6 +48,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>${reflections.version}</version>
         </dependency>
 
     </dependencies>
