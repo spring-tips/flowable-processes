@@ -137,8 +137,7 @@ class FlowableHints implements RuntimeHintsRegistrar {
     private Set<Resource> persistenceResources() throws Exception {
         var patterns = Stream
                 .of(
-//                        "processes/**/*.bpmn20.xml",
-                        "org/flowable/**/mappings.xml",
+                 "org/flowable/**/mappings.xml",
                         "org/flowable/**/*.sql",
                         "org/flowable/**/*.xml",
                         "org/flowable/**/*.txt",
@@ -158,19 +157,10 @@ class FlowableHints implements RuntimeHintsRegistrar {
                 .filter(Resource::exists)
                 .toList();
 
-        for (var t : patterns)
-            System.out.println(t.toString());
-
         var resources = new HashSet<Resource>();
         resources.addAll(patterns);
         resources.addAll(from(this.resolver.getResources("META-INF/services/org.flowable.common.engine.impl.EngineConfigurator")));
         resources.addAll(from(this.resolver.getResources("org/flowable/common/engine/impl/de/odysseus/el/misc/LocalStrings")));
-
-        System.out.println("Found following resources through pattern resolving:");
-        for (Resource resource : resources) {
-            System.out.println(resource);
-        }
-
         return resources;
     }
 
