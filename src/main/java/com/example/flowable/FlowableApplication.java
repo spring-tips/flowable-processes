@@ -24,7 +24,6 @@ import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +32,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.FileCopyUtils;
@@ -40,7 +40,7 @@ import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 
 import javax.xml.parsers.DocumentBuilderFactory;
-
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.util.Arrays;
@@ -49,33 +49,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
-@ImportRuntimeHints({ FlowableHints.class, FlowableApplication.AppSpecificRuntimeHints.class })
-@SpringBootApplication/*(exclude = {
-        org.flowable.spring.boot.actuate.info.FlowableInfoAutoConfiguration.class,
-        org.flowable.spring.boot.EndpointAutoConfiguration.class,
-        org.flowable.spring.boot.RestApiAutoConfiguration.class,
-        org.flowable.spring.boot.app.AppEngineServicesAutoConfiguration.class,
-        org.flowable.spring.boot.app.AppEngineAutoConfiguration.class,
-        org.flowable.spring.boot.ProcessEngineServicesAutoConfiguration.class,
-        org.flowable.spring.boot.ProcessEngineAutoConfiguration.class,
-        org.flowable.spring.boot.FlowableJpaAutoConfiguration.class,
-        org.flowable.spring.boot.dmn.DmnEngineAutoConfiguration.class,
-        org.flowable.spring.boot.dmn.DmnEngineServicesAutoConfiguration.class,
-        org.flowable.spring.boot.idm.IdmEngineAutoConfiguration.class,
-        org.flowable.spring.boot.idm.IdmEngineServicesAutoConfiguration.class,
-        org.flowable.spring.boot.eventregistry.EventRegistryAutoConfiguration.class,
-        org.flowable.spring.boot.eventregistry.EventRegistryServicesAutoConfiguration.class,
-        org.flowable.spring.boot.cmmn.CmmnEngineAutoConfiguration.class,
-        org.flowable.spring.boot.cmmn.CmmnEngineServicesAutoConfiguration.class,
-        org.flowable.spring.boot.ldap.FlowableLdapAutoConfiguration.class,
-        org.flowable.spring.boot.FlowableSecurityAutoConfiguration.class
-})*/
+@ImportRuntimeHints({FlowableHints.class, FlowableApplication.AppSpecificRuntimeHints.class})
+@SpringBootApplication
 public class FlowableApplication {
 
     public static void main(String[] args) {
         System.setProperty("javax.xml.accessExternalDTD", "all");
-
         SpringApplication.run(FlowableApplication.class, args);
     }
 
@@ -84,8 +65,6 @@ public class FlowableApplication {
         @Override
         public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
             hints.resources().registerResource(new ClassPathResource("my-processes/single-task-process.bpmn20.xml"));
-
-            // How can we avoid this?
             hints.reflection().registerType(EmailService.class,
                     MemberCategory.DECLARED_FIELDS,
                     MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
@@ -102,6 +81,7 @@ public class FlowableApplication {
                     .addClasspathResource("my-processes/single-task-process.bpmn20.xml").deploy();
         };
     }
+
 
     @Bean
     @Order(2)
@@ -137,26 +117,54 @@ public class FlowableApplication {
 
 class FlowableHints implements RuntimeHintsRegistrar {
 
-    private final PathMatchingResourcePatternResolver resourcePatternResolver =
-            new PathMatchingResourcePatternResolver();
+    private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+
+    private static <T> Set<T> from(T[] t) {
+        return new HashSet<>(Arrays.asList(t));
+    }
+
+    private static Resource newResourceFor(Resource in) {
+        try {
+            var marker = "jar!";
+            var p = in.getURL().toExternalForm();
+            var rest = p.substring(p.lastIndexOf(marker) + marker.length());
+            return new ClassPathResource(rest);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private Set<Resource> persistenceResources() throws Exception {
+        var patterns = Stream
+                .of(
+//                        "processes/**/*.bpmn20.xml",
+                        "org/flowable/**/mappings.xml",
+                        "org/flowable/**/*.sql",
+                        "org/flowable/**/*.xml",
+                        "org/flowable/**/*.txt",
+                        "org/flowable/**/*.xsd",
+                        "org/flowable/**/*.properties"
+                )
+                .map(path -> ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX + path)
+                .flatMap(p -> {
+                    try {
+                        return Stream.of(this.resolver.getResources(p));
+                    }//
+                    catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .map(FlowableHints::newResourceFor)
+                .filter(Resource::exists)
+                .toList();
+
+        for (var t : patterns)
+            System.out.println(t.toString());
+
         var resources = new HashSet<Resource>();
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/db/**/*.sql")));
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/**/db/**/*.sql")));
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/common/db/**/*.sql")));
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/identitylink/service/db/**/*.sql")));
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/entitylink/service/db/**/*.sql")));
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/eventsubscription/service/db/**/*.sql")));
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/task/service/db/**/*.sql")));
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/job/service/db/**/*.sql")));
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/batch/service/db/**/*.sql")));
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/idm/db/**/*.sql")));
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/variable/service/db/**/*.sql")));
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/common/db/properties/*.properties")));
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/**/db/*.xml")));
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/impl/bpmn/parser/*.xsd")));
-        resources.addAll(from(this.resourcePatternResolver.getResources("org/flowable/common/engine/impl/de/odysseus/el/misc/LocalStrings")));
+        resources.addAll(patterns);
+        resources.addAll(from(this.resolver.getResources("META-INF/services/org.flowable.common.engine.impl.EngineConfigurator")));
+        resources.addAll(from(this.resolver.getResources("org/flowable/common/engine/impl/de/odysseus/el/misc/LocalStrings")));
 
         System.out.println("Found following resources through pattern resolving:");
         for (Resource resource : resources) {
@@ -166,45 +174,31 @@ class FlowableHints implements RuntimeHintsRegistrar {
         return resources;
     }
 
-    private <T> Set<T> from(T[] t) {
-        return new HashSet<>(Arrays.asList(t));
-    }
 
     @Override
     public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
         try {
 
-            MemberCategory[] memberCategories = new MemberCategory[] {
+            var memberCategories = new MemberCategory[]{
                     MemberCategory.DECLARED_FIELDS,
                     MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
                     MemberCategory.INVOKE_DECLARED_METHODS
             };
 
-            hints.reflection().registerType(ProxyFactory.class);
-            hints.reflection().registerType(XMLLanguageDriver.class, memberCategories);
-            hints.reflection().registerType(RawLanguageDriver.class, memberCategories);
-            hints.reflection().registerType(org.apache.ibatis.session.Configuration.class, memberCategories);
-            hints.reflection().registerType(HashSet.class, memberCategories);
+            var clazzes = Set.of(ProxyFactory.class, XMLLanguageDriver.class,
+                    org.apache.ibatis.logging.slf4j.Slf4jImpl.class, EntityCacheImpl.class,
+                    RawLanguageDriver.class, org.apache.ibatis.session.Configuration.class, HashSet.class);
 
-            Reflections reflections = new Reflections("org.flowable");
-            Class<?>[] subTypes = {
+            for (var c : clazzes)
+                hints.reflection().registerType(c, memberCategories);
+
+            var reflections = new Reflections("org.flowable");
+            var subTypes = new Class[]{
                     TypeHandler.class,
                     EntityManager.class,
                     Entity.class,
                     Query.class,
                     VariableType.class,
-            };
-            for (Class<?> subType : subTypes) {
-
-                hints.reflection().registerType(subType, memberCategories);
-
-                for (Class<?> type : reflections.getSubTypesOf(subType)) {
-                    System.out.println("Registering hint for " + type);
-                    hints.reflection().registerType(type, memberCategories);
-                }
-            }
-
-            Class<?>[] types = {
                     ListQueryParameterObject.class,
                     TablePageQueryImpl.class,
                     SetChannelDefinitionTypeAndImplementationCustomChange.class,
@@ -213,30 +207,21 @@ class FlowableHints implements RuntimeHintsRegistrar {
                     QueryVariableValue.class,
                     ExpressionFactoryImpl.class
             };
-
-            for (Class<?> type : types) {
-                System.out.println("Registering hint for " + type);
-                hints.reflection().registerType(type, memberCategories);
+            for (var subType : subTypes) {
+                hints.reflection().registerType(subType, memberCategories);
+                var subs = (Set<Class<?>>) reflections.getSubTypesOf(subType);
+                for (var type : subs) {
+                    hints.reflection().registerType(type, memberCategories);
+                }
             }
-
-            hints.reflection().registerType(EntityCacheImpl.class, memberCategories);
-
-            hints.reflection().registerType(org.apache.ibatis.logging.slf4j.Slf4jImpl.class, memberCategories);
 
             var resources = new HashSet<Resource>();
             resources.addAll(persistenceResources());
-
             resources.addAll("""
-                    META-INF/services/org.flowable.common.engine.impl.EngineConfigurator
                     flowable-default.properties
                     flowable-default.xml
                     flowable-default.yaml
                     flowable-default.yml
-                    org/flowable/eventregistry/db/mapping/mappings.xml
-                    org/flowable/spring/boot/flowable-banner.txt
-                    org/flowable/db/mapping/mappings.xml
-                    org/flowable/idm/db/mapping/mappings.xml
-                    org/flowable/common/db/properties/postgres.properties
                        """
                     .stripIndent()
                     .stripLeading()
