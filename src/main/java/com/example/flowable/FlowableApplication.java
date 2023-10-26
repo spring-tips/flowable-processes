@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @ImportRuntimeHints({FlowableHints.class, FlowableApplication.AppSpecificRuntimeHints.class})
@@ -137,7 +138,7 @@ class FlowableHints implements RuntimeHintsRegistrar {
     private Set<Resource> persistenceResources() throws Exception {
         var patterns = Stream
                 .of(
-                 "org/flowable/**/mappings.xml",
+                        "org/flowable/**/mappings.xml",
                         "org/flowable/**/*.sql",
                         "org/flowable/**/*.xml",
                         "org/flowable/**/*.txt",
@@ -154,14 +155,19 @@ class FlowableHints implements RuntimeHintsRegistrar {
                     }
                 })
                 .map(FlowableHints::newResourceFor)
-                .filter(Resource::exists)
                 .toList();
 
         var resources = new HashSet<Resource>();
         resources.addAll(patterns);
+
+        for (var e : "xml,yaml,yml".split(","))
+            resources.add(new ClassPathResource("flowable-default." + e));
+
         resources.addAll(from(this.resolver.getResources("META-INF/services/org.flowable.common.engine.impl.EngineConfigurator")));
         resources.addAll(from(this.resolver.getResources("org/flowable/common/engine/impl/de/odysseus/el/misc/LocalStrings")));
-        return resources;
+        return resources.stream()
+                .filter(Resource::exists)
+                .collect(Collectors.toSet());
     }
 
 
@@ -183,7 +189,7 @@ class FlowableHints implements RuntimeHintsRegistrar {
                 hints.reflection().registerType(c, memberCategories);
 
             var reflections = new Reflections("org.flowable");
-            var subTypes = new Class[]{
+            var types = new Class[]{
                     TypeHandler.class,
                     EntityManager.class,
                     Entity.class,
@@ -197,11 +203,11 @@ class FlowableHints implements RuntimeHintsRegistrar {
                     QueryVariableValue.class,
                     ExpressionFactoryImpl.class
             };
-            for (var subType : subTypes) {
-                hints.reflection().registerType(subType, memberCategories);
-                var subs = (Set<Class<?>>) reflections.getSubTypesOf(subType);
-                for (var type : subs) {
-                    hints.reflection().registerType(type, memberCategories);
+            for (var t : types) {
+                hints.reflection().registerType(t, memberCategories);
+                var subTypes = (Set<Class<?>>) reflections.getSubTypesOf(t);
+                for (var s : subTypes) {
+                    hints.reflection().registerType(s, memberCategories);
                 }
             }
 
