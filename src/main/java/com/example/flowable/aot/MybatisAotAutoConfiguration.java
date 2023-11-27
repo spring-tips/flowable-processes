@@ -17,21 +17,21 @@ class MybatisAotAutoConfiguration {
 	}
 
 	@Bean
-	static GlobalBeanFactoryInitializationAotProcessor myBatisGlobalHintsBeanFactoryInitializationAotProcessor(
+	static MybatisGlobalBeanFactoryInitializationAotProcessor myBatisGlobalHintsBeanFactoryInitializationAotProcessor(
 			PathMatchingResourcePatternResolver patternResolver) {
-		return new GlobalBeanFactoryInitializationAotProcessor(patternResolver);
+		return new MybatisGlobalBeanFactoryInitializationAotProcessor(patternResolver);
 	}
 
 	@Bean
-	static ApplicationSpecificBeanFactoryInitializationAotProcessor myBatisBeanFactoryInitializationAotProcessor(
+	static MybatisApplicationSpecificBeanFactoryInitializationAotProcessor myBatisBeanFactoryInitializationAotProcessor(
 			PathMatchingResourcePatternResolver patternResolver) {
-		return new ApplicationSpecificBeanFactoryInitializationAotProcessor(patternResolver);
+		return new MybatisApplicationSpecificBeanFactoryInitializationAotProcessor(patternResolver);
 	}
 
 	@Bean
-	static MappersBeanFactoryInitializationAotProcessor mappersBeanFactoryInitializationAotProcessor(
+	static MybatisMappersBeanFactoryInitializationAotProcessor mappersBeanFactoryInitializationAotProcessor(
 			PathMatchingResourcePatternResolver patternResolver) {
-		return new MappersBeanFactoryInitializationAotProcessor(patternResolver);
+		return new MybatisMappersBeanFactoryInitializationAotProcessor(patternResolver);
 	}
 
 }

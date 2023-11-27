@@ -8,8 +8,8 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 class FlowableAotAutoConfiguration {
 
     @Bean
-    static FlowableMappersBeanFactoryInitializationAotProcessor flowableMappersBeanFactoryInitializationAotProcessor(PathMatchingResourcePatternResolver re ){
-        return new FlowableMappersBeanFactoryInitializationAotProcessor(re);
+    static FlowableMybatisMappersBeanFactoryInitializationAotProcessor flowableMappersBeanFactoryInitializationAotProcessor(PathMatchingResourcePatternResolver re ){
+        return new FlowableMybatisMappersBeanFactoryInitializationAotProcessor(re);
     }
 
     @Bean

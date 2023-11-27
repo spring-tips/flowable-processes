@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 
 import org.apache.ibatis.reflection.TypeParameterResolver;
 
-final class MapperTypeUtils {
+final class MybatisMapperTypeUtils {
 
 
 	static Class<?> resolveReturnClass(Class<?> mapperInterface, Method method) {

@@ -4,6 +4,9 @@ import org.apache.ibatis.javassist.util.proxy.ProxyFactory;
 import org.apache.ibatis.scripting.defaults.RawLanguageDriver;
 import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
 import org.apache.ibatis.type.TypeHandler;
+import org.flowable.bpmn.converter.BpmnXMLConverter;
+import org.flowable.bpmn.model.ImplementationType;
+import org.flowable.bpmn.model.ServiceTask;
 import org.flowable.common.engine.api.query.Query;
 import org.flowable.common.engine.impl.db.ListQueryParameterObject;
 import org.flowable.common.engine.impl.de.odysseus.el.ExpressionFactoryImpl;
@@ -19,18 +22,16 @@ import org.flowable.variable.service.impl.QueryVariableValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aot.hint.MemberCategory;
-import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
 import org.springframework.beans.factory.aot.BeanFactoryInitializationAotContribution;
 import org.springframework.beans.factory.aot.BeanFactoryInitializationAotProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
-import org.springframework.core.type.filter.AssignableTypeFilter;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -54,45 +55,16 @@ class FlowableBeanFactoryInitializationAotProcessor implements BeanFactoryInitia
         this.resolver = resolver;
     }
 
-    private static <T> Set<T> from(T[] t) {
-        return new HashSet<>(Arrays.asList(t));
+
+    private Set<Resource> processResources() {
+        return resources("processes/**/*.bpmn20.xml");
     }
 
-    private static Resource newResourceFor(Resource in) {
-        try {
-            var marker = "jar!";
-            var p = in.getURL().toExternalForm();
-            var rest = p.substring(p.lastIndexOf(marker) + marker.length());
-            return new ClassPathResource(rest);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private Set<Resource> persistenceResources() throws Exception {
-        var patterns = Stream
-                .of(
-                        "processes/**/*",
-                        "org/flowable/**/*.sql",
-                        "org/flowable/**/*.xml",
-                        "org/flowable/**/*.txt",
-                        "org/flowable/**/*.xsd",
-                        "org/flowable/**/*.properties"
-                )
-                .map(path -> ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX + path)
-                .flatMap(p -> {
-                    try {
-                        return Stream.of(this.resolver.getResources(p));
-                    }//
-                    catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .map(FlowableBeanFactoryInitializationAotProcessor::newResourceFor)
-                .toList();
+    private Set<Resource> flowablePersistenceResources() throws Exception {
 
         var resources = new HashSet<Resource>();
-        resources.addAll(patterns);
+        resources.addAll(resources("org/flowable/**/*.sql", "org/flowable/**/*.xml", "org/flowable/**/*.txt", "org/flowable/**/*.xsd", "org/flowable/**/*.properties"));
+        resources.addAll(processResources());
 
         for (var e : "xml,yaml,yml".split(","))
             resources.add(new ClassPathResource("flowable-default." + e));
@@ -104,102 +76,164 @@ class FlowableBeanFactoryInitializationAotProcessor implements BeanFactoryInitia
                 .collect(Collectors.toSet());
     }
 
-    private static Set<String> getSubTypesOf(Class<?> clzzName, String... packages) {
-        var set = new HashSet<String>();
-
-        for (var p : packages) {
-            var classPathScanningCandidateComponentProvider = new ClassPathScanningCandidateComponentProvider(false);
-
-            classPathScanningCandidateComponentProvider.addIncludeFilter(new AssignableTypeFilter(clzzName));
-
-            var results = classPathScanningCandidateComponentProvider.findCandidateComponents(p);
-            for (var r : results)
-                set.add(r.getBeanClassName());
-        }
-
-        return set;
-
-    }
-
-    private void doRegisterHints(ConfigurableListableBeanFactory beanFactory, RuntimeHints hints, ClassLoader classLoader) {
-        try {
-
-            var memberCategories = MemberCategory.values();
-
-            var clazzes = Set.of(ProxyFactory.class, XMLLanguageDriver.class,
-                    org.apache.ibatis.logging.slf4j.Slf4jImpl.class, EntityCacheImpl.class,
-                    RawLanguageDriver.class, org.apache.ibatis.session.Configuration.class, HashSet.class);
-
-            for (var c : clazzes)
-                hints.reflection().registerType(c, memberCategories);
-
-
-            var types = new Class[]{
-                    TypeHandler.class,
-                    EntityManager.class,
-                    Entity.class,
-                    Query.class,
-                    VariableType.class,
-                    ListQueryParameterObject.class,
-                    TablePageQueryImpl.class,
-                    SetChannelDefinitionTypeAndImplementationCustomChange.class,
-                    ByteArrayRef.class,
-                    InternalVariableInstanceQueryImpl.class,
-                    QueryVariableValue.class,
-                    ExpressionFactoryImpl.class
-            };
-
-            var packagesSet = new HashSet<String>();
-            packagesSet.add("org.apache.ibatis");
-            packagesSet.add("org.flowable");
-            packagesSet.addAll(AutoConfigurationPackages.get(beanFactory));
-            var packages = packagesSet.toArray(new String[0]);
-
-            for (var t : types) {
-                hints.reflection().registerType(t, memberCategories);
-                var subTypes = getSubTypesOf(t, packages);
-                for (var s : subTypes) {
-                    if (StringUtils.hasText(s)) {
-                        hints.reflection().registerType(TypeReference.of(s), memberCategories);
-                        log.info("registering hint for [" + s + "]");
-                    }
-                }
-            }
-
-            var resources = new HashSet<Resource>();
-            resources.addAll(persistenceResources());
-            resources.addAll("""
-                    flowable-default.properties
-                    flowable-default.xml
-                    flowable-default.yaml
-                    flowable-default.yml
-                       """
-                    .stripIndent()
-                    .stripLeading()
-                    .trim()
-                    .lines()
-                    .map(l -> l.strip().trim())
-                    .filter(l -> !l.isEmpty())
-                    .map(ClassPathResource::new)
-                    .toList());
-
-
-            for (var resource : resources) {
-                if (resource.exists()) {
-                    hints.resources().registerResource(resource);
-                    System.out.println("registering hint for " + resource);
-                }
-            }
-
-        }//
-        catch (Throwable throwable) {
-            throw new RuntimeException(throwable);
-        }
-    }
-
     @Override
     public BeanFactoryInitializationAotContribution processAheadOfTime(ConfigurableListableBeanFactory beanFactory) {
-        return (generationContext, beanFactoryInitializationCode) -> doRegisterHints(beanFactory, generationContext.getRuntimeHints(), beanFactory.getBeanClassLoader());
+        return (generationContext, beanFactoryInitializationCode) -> {
+            var hints = generationContext.getRuntimeHints();
+            beanFactory.getBeanClassLoader();
+            try {
+
+                var memberCategories = MemberCategory.values();
+
+
+                for (var c : Set.of(ProxyFactory.class, XMLLanguageDriver.class,
+                        org.apache.ibatis.logging.slf4j.Slf4jImpl.class, EntityCacheImpl.class,
+                        RawLanguageDriver.class, org.apache.ibatis.session.Configuration.class, HashSet.class))
+                    hints.reflection().registerType(c, memberCategories);
+
+                var types = new Class[]{
+                        TypeHandler.class,
+                        EntityManager.class,
+                        Entity.class,
+                        Query.class,
+                        VariableType.class,
+                        ListQueryParameterObject.class,
+                        TablePageQueryImpl.class,
+                        SetChannelDefinitionTypeAndImplementationCustomChange.class,
+                        ByteArrayRef.class,
+                        InternalVariableInstanceQueryImpl.class,
+                        QueryVariableValue.class,
+                        ExpressionFactoryImpl.class
+                };
+
+                var packagesSet = new HashSet<String>();
+                packagesSet.add("org.apache.ibatis");
+                packagesSet.add("org.flowable");
+                packagesSet.addAll(AutoConfigurationPackages.get(beanFactory));
+                var packages = packagesSet.toArray(new String[0]);
+
+                for (var t : types) {
+                    hints.reflection().registerType(t, memberCategories);
+                    var subTypes = AotUtils.getSubTypesOf(t, packages);
+                    for (var s : subTypes) {
+                        if (StringUtils.hasText(s)) {
+                            hints.reflection().registerType(TypeReference.of(s), memberCategories);
+                        }
+                    }
+                }
+
+                var resources = new HashSet<Resource>();
+                resources.addAll(flowablePersistenceResources());
+                resources.addAll("""
+                        flowable-default.properties
+                        flowable-default.xml
+                        flowable-default.yaml
+                        flowable-default.yml
+                           """
+                        .stripIndent()
+                        .stripLeading()
+                        .trim()
+                        .lines()
+                        .map(l -> l.strip().trim())
+                        .filter(l -> !l.isEmpty())
+                        .map(ClassPathResource::new)
+                        .toList());
+
+
+                for (var resource : resources) {
+                    if (resource.exists()) {
+                        hints.resources().registerResource(resource);
+                    }
+                }
+
+
+                // here lay dragons; we're going to attempt to proactively register aot hints for beans referenced within a process definition
+                var processDefinitions = this.processResources();
+                for (var processDefinitionXmlResource : processDefinitions) {
+                    Assert.state(processDefinitionXmlResource.exists(), "the process definition file [" + processDefinitionXmlResource.getFilename() +
+                            "] does not exist");
+
+                    hints.resources().registerResource(processDefinitionXmlResource);
+                    try (var in = processDefinitionXmlResource.getInputStream()) {
+
+                        var bpmnXMLConverter = new BpmnXMLConverter();
+                        var bpmnModel = bpmnXMLConverter.convertToBpmnModel(() -> in, false, false);
+                        var serviceTasks = bpmnModel.getMainProcess().findFlowElementsOfType(ServiceTask.class);
+                        for (var st : serviceTasks) {
+                            if (st.getImplementationType().equals(ImplementationType.IMPLEMENTATION_TYPE_DELEGATEEXPRESSION)) {
+                                var expression = st.getImplementation();
+                                var expressionWithoutDelimiters = expression.substring(2);
+                                expressionWithoutDelimiters = expressionWithoutDelimiters.substring(0, expressionWithoutDelimiters.length() - 1);
+                                var beanName = expressionWithoutDelimiters;
+                                try {
+                                    var beanDefinition = beanFactory.getBeanDefinition(beanName);
+                                    hints.reflection().registerType(TypeReference.of(beanDefinition.getBeanClassName()), MemberCategory.values());
+
+                                    log.debug("registering hint for bean name [" + beanName + "]");
+                                }//
+                                catch (Throwable throwable) {
+                                    log.error("couldn't find bean named [" + beanName + "]");
+                                }
+
+                            }
+                        }
+                    }
+                }
+
+
+            }//
+            catch (Throwable throwable) {
+                throw new RuntimeException(throwable);
+            }
+        };
     }
+
+
+    private static <T> Set<T> from(T[] t) {
+        return new HashSet<>(Arrays.asList(t));
+    }
+
+    private static Resource newResourceFor(Resource in) {
+        try {
+            var marker = "jar!";
+            var externalFormOfUrl = in.getURL().toExternalForm();
+            if (externalFormOfUrl.contains(marker)) {
+                var rest = externalFormOfUrl.substring(externalFormOfUrl.lastIndexOf(marker) + marker.length());
+                return new ClassPathResource(rest);
+            }//
+            else {
+                // ugh i think this only works for maven? what about gradle?
+                var classesSubstring = "classes/";
+                var locationOfClassesInUrl = externalFormOfUrl.indexOf(classesSubstring);
+                if (locationOfClassesInUrl != -1) {
+                    return new ClassPathResource(externalFormOfUrl.substring(locationOfClassesInUrl + classesSubstring.length()));
+                }
+
+            }
+
+            return in;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    Set<Resource> resources(String... patterns) {
+        return Stream
+                .of(patterns)
+                .map(path -> ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX + path)
+                .flatMap(p -> {
+                    try {
+                        return Stream.of(this.resolver.getResources(p));
+                    }//
+                    catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .map(FlowableBeanFactoryInitializationAotProcessor::newResourceFor)
+                .filter(Resource::exists)
+                .collect(Collectors.toSet());
+    }
+
 
 }

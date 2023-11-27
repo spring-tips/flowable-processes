@@ -1,16 +1,15 @@
 package com.example.flowable.aot;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
-class FlowableMappersBeanFactoryInitializationAotProcessor
-        extends MappersBeanFactoryInitializationAotProcessor {
+class FlowableMybatisMappersBeanFactoryInitializationAotProcessor
+        extends MybatisMappersBeanFactoryInitializationAotProcessor {
 
-    FlowableMappersBeanFactoryInitializationAotProcessor(PathMatchingResourcePatternResolver resolver) {
+    FlowableMybatisMappersBeanFactoryInitializationAotProcessor(PathMatchingResourcePatternResolver resolver) {
         super(resolver);
     }
 

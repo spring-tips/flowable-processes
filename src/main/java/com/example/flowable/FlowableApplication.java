@@ -12,7 +12,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -20,21 +19,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@ImportRuntimeHints({ FlowableApplication.AppSpecificRuntimeHints.class})
 @SpringBootApplication
 public class FlowableApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(FlowableApplication.class, args);
-    }
-
-    static class AppSpecificRuntimeHints implements RuntimeHintsRegistrar {
-
-        @Override
-        public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-            // if you're using a flowable:expression, you need to reference beans in a reflection-friendly way yourself.
-            hints.reflection().registerType(EmailService.class, MemberCategory.values());
-        }
     }
 
     @Bean
@@ -79,8 +68,8 @@ class EmailService implements JavaDelegate {
 
     @Override
     public void execute(DelegateExecution execution) {
-        String customerId = (String) execution.getVariable("customerId");
-        String email = (String) execution.getVariable("email");
+        var customerId = (String) execution.getVariable("customerId");
+        var email = (String) execution.getVariable("email");
         System.out.println("sending welcome email for " + customerId + " to " + email);
         sends.computeIfAbsent(email, e -> new AtomicInteger());
         sends.get(email).incrementAndGet();

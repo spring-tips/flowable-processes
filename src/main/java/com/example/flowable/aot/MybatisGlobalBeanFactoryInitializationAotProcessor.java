@@ -109,13 +109,13 @@ import org.springframework.core.io.support.ResourcePatternResolver;
  *
  * @author Josh Long
  */
-class GlobalBeanFactoryInitializationAotProcessor implements BeanFactoryInitializationAotProcessor {
+class MybatisGlobalBeanFactoryInitializationAotProcessor implements BeanFactoryInitializationAotProcessor {
 
 	private final PathMatchingResourcePatternResolver resourcePatternResolver;
 
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
-	GlobalBeanFactoryInitializationAotProcessor(PathMatchingResourcePatternResolver patternResolver) {
+	MybatisGlobalBeanFactoryInitializationAotProcessor(PathMatchingResourcePatternResolver patternResolver) {
 		this.resourcePatternResolver = patternResolver;
 	}
 
@@ -165,7 +165,7 @@ class GlobalBeanFactoryInitializationAotProcessor implements BeanFactoryInitiali
 					throw new RuntimeException(e);
 				}
 			})
-			.map(GlobalBeanFactoryInitializationAotProcessor::newResourceFor)
+			.map(MybatisGlobalBeanFactoryInitializationAotProcessor::newResourceFor)
 			.filter(Resource::exists)
 			.toList();
 

@@ -32,11 +32,11 @@ import org.springframework.util.ReflectionUtils;
  *
  * @author Josh Long
  */
-class ApplicationSpecificBeanFactoryInitializationAotProcessor implements BeanFactoryInitializationAotProcessor {
+class MybatisApplicationSpecificBeanFactoryInitializationAotProcessor implements BeanFactoryInitializationAotProcessor {
 
 	private final PathMatchingResourcePatternResolver resourcePatternResolver;
 
-	ApplicationSpecificBeanFactoryInitializationAotProcessor(PathMatchingResourcePatternResolver patternResolver) {
+	MybatisApplicationSpecificBeanFactoryInitializationAotProcessor(PathMatchingResourcePatternResolver patternResolver) {
 		this.resourcePatternResolver = patternResolver;
 	}
 
@@ -144,10 +144,10 @@ class ApplicationSpecificBeanFactoryInitializationAotProcessor implements BeanFa
 				registerSqlProviderTypes(method, registry, DeleteProvider.class, DeleteProvider::value,
 						DeleteProvider::type);
 
-				var returnType = MapperTypeUtils.resolveReturnClass(mapperInterfaceType, method);
+				var returnType = MybatisMapperTypeUtils.resolveReturnClass(mapperInterfaceType, method);
 				registerReflectionTypeIfNecessary(returnType, registry);
 
-				MapperTypeUtils.resolveParameterClasses(mapperInterfaceType, method)
+				MybatisMapperTypeUtils.resolveParameterClasses(mapperInterfaceType, method)
 					.forEach(x -> registerReflectionTypeIfNecessary(x, registry));
 			}
 		}
