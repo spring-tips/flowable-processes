@@ -1,1 +1,2 @@
 com.example.flowable.aot.MybatisAotAutoConfiguration
+com.example.flowable.aot.FlowableAotAutoConfiguration

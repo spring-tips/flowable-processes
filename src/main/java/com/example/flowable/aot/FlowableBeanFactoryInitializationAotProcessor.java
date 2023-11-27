@@ -40,6 +40,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * @author Josh Long
+ * @author Joram Barrez
+ */
 class FlowableBeanFactoryInitializationAotProcessor implements BeanFactoryInitializationAotProcessor {
 
     private final PathMatchingResourcePatternResolver resolver;
@@ -68,6 +72,7 @@ class FlowableBeanFactoryInitializationAotProcessor implements BeanFactoryInitia
     private Set<Resource> persistenceResources() throws Exception {
         var patterns = Stream
                 .of(
+                        "processes/**/*",
                         "org/flowable/**/*.sql",
                         "org/flowable/**/*.xml",
                         "org/flowable/**/*.txt",
@@ -119,11 +124,7 @@ class FlowableBeanFactoryInitializationAotProcessor implements BeanFactoryInitia
     private void doRegisterHints(ConfigurableListableBeanFactory beanFactory, RuntimeHints hints, ClassLoader classLoader) {
         try {
 
-            var memberCategories = MemberCategory.values();/*new MemberCategory[]{
-                    MemberCategory.DECLARED_FIELDS,
-                    MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
-                    MemberCategory.INVOKE_DECLARED_METHODS
-            };*/
+            var memberCategories = MemberCategory.values();
 
             var clazzes = Set.of(ProxyFactory.class, XMLLanguageDriver.class,
                     org.apache.ibatis.logging.slf4j.Slf4jImpl.class, EntityCacheImpl.class,
@@ -182,16 +183,6 @@ class FlowableBeanFactoryInitializationAotProcessor implements BeanFactoryInitia
                     .map(ClassPathResource::new)
                     .toList());
 
-//            var mappings = Set.of(
-//                    new ClassPathResource("/org/flowable/idm/db/mapping/mappings.xml"),
-//                    new ClassPathResource("/org/flowable/db/mapping/mappings.xml"),
-//                    new ClassPathResource("/org/flowable/eventregistry/db/mapping/mappings.xml")
-//            );
-//            for (var r : mappings) {
-//                if (r.exists()) {
-//                    resources.addAll(mappers(r));
-//                }
-//            }
 
             for (var resource : resources) {
                 if (resource.exists()) {
@@ -211,36 +202,4 @@ class FlowableBeanFactoryInitializationAotProcessor implements BeanFactoryInitia
         return (generationContext, beanFactoryInitializationCode) -> doRegisterHints(beanFactory, generationContext.getRuntimeHints(), beanFactory.getBeanClassLoader());
     }
 
-//    private Set<Resource> mappers(Resource mapping) throws Exception {
-//        var resources = new HashSet<Resource>();
-//        try (var in = new InputStreamReader(mapping.getInputStream())) {
-//            var xml = FileCopyUtils.copyToString(in);
-//            resources.addAll(mapperResources(xml));
-//        }
-//        resources.add(mapping);
-//        return resources;
-//
-//    }
-
-//    private Set<Resource> mapperResources(String xml) {
-//        try {
-//            var set = new HashSet<Resource>();
-//            var dbf = DocumentBuilderFactory.newInstance();
-//            var db = dbf.newDocumentBuilder();
-//            var is = new InputSource(new StringReader(xml));
-//            var doc = db.parse(is);
-//            var mappersElement = (Element) doc.getElementsByTagName("mappers").item(0);
-//            var mapperList = mappersElement.getElementsByTagName("mapper");
-//            for (var i = 0; i < mapperList.getLength(); i++) {
-//                var mapperElement = (Element) mapperList.item(i);
-//                var resourceValue = mapperElement.getAttribute("resource");
-//                set.add(new ClassPathResource(resourceValue));
-//            }
-//            return set;
-//        }//
-//        catch (Throwable throwable) {
-//            throw new RuntimeException(throwable);
-//        }
-//
-//    }
 }

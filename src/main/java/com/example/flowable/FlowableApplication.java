@@ -1,6 +1,5 @@
 package com.example.flowable;
 
-import org.flowable.engine.ProcessEngine;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
 import org.flowable.engine.delegate.DelegateExecution;
@@ -14,7 +13,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -27,37 +25,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class FlowableApplication {
 
     public static void main(String[] args) {
-        System.setProperty("javax.xml.accessExternalDTD", "all");
         SpringApplication.run(FlowableApplication.class, args);
     }
-
-
 
     static class AppSpecificRuntimeHints implements RuntimeHintsRegistrar {
 
         @Override
         public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-            hints.resources().registerResource(new ClassPathResource("my-processes/single-task-process.bpmn20.xml"));
-            hints.reflection().registerType(EmailService.class,
-                    MemberCategory.DECLARED_FIELDS,
-                    MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
-                    MemberCategory.INVOKE_DECLARED_METHODS);
+            // if you're using a flowable:expression, you need to reference beans in a reflection-friendly way yourself.
+            hints.reflection().registerType(EmailService.class, MemberCategory.values());
         }
     }
 
     @Bean
-    @Order(1)
-    ApplicationRunner deployProcesses(ProcessEngine processEngine) {
-        return args -> {
-            System.out.println("Deploying process definition");
-            processEngine.getRepositoryService().createDeployment()
-                    .addClasspathResource("my-processes/single-task-process.bpmn20.xml").deploy();
-        };
-    }
-
-
-    @Bean
-    @Order(2)
     ApplicationRunner demo(RuntimeService runtimeService, TaskService taskService, EmailService emailService) {
         return args -> {
             var customerId = "1";

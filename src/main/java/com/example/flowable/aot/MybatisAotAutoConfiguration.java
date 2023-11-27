@@ -10,15 +10,6 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 @Configuration
 class MybatisAotAutoConfiguration {
 
-	@Bean
-	static FlowableBeanFactoryInitializationAotProcessor hints (PathMatchingResourcePatternResolver patternResolver){
-		return new FlowableBeanFactoryInitializationAotProcessor(patternResolver);
-	}
-
-	@Bean
-	static FlowableMappersBeanFactoryInitializationAotProcessor flowableMappersBeanFactoryInitializationAotProcessor (PathMatchingResourcePatternResolver re ){
-		return new FlowableMappersBeanFactoryInitializationAotProcessor(re);
-	}
 
 	@Bean
 	static PathMatchingResourcePatternResolver patternResolver() {

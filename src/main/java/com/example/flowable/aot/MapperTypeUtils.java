@@ -27,8 +27,6 @@ import org.apache.ibatis.reflection.TypeParameterResolver;
 
 final class MapperTypeUtils {
 
-	private MapperTypeUtils() {
-	}
 
 	static Class<?> resolveReturnClass(Class<?> mapperInterface, Method method) {
 		var resolvedReturnType = TypeParameterResolver.resolveReturnType(method, mapperInterface);
