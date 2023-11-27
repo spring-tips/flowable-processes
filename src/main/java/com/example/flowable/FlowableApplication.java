@@ -1,5 +1,19 @@
 package com.example.flowable;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+
 import org.apache.ibatis.javassist.util.proxy.ProxyFactory;
 import org.apache.ibatis.scripting.defaults.RawLanguageDriver;
 import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
@@ -39,19 +53,6 @@ import org.springframework.util.FileCopyUtils;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 @ImportRuntimeHints({FlowableHints.class, FlowableApplication.AppSpecificRuntimeHints.class})
 @SpringBootApplication
 public class FlowableApplication {
@@ -60,6 +61,8 @@ public class FlowableApplication {
         System.setProperty("javax.xml.accessExternalDTD", "all");
         SpringApplication.run(FlowableApplication.class, args);
     }
+
+
 
     static class AppSpecificRuntimeHints implements RuntimeHintsRegistrar {
 
@@ -138,7 +141,7 @@ class FlowableHints implements RuntimeHintsRegistrar {
     private Set<Resource> persistenceResources() throws Exception {
         var patterns = Stream
                 .of(
-                        "org/flowable/**/mappings.xml",
+//                        "org/flowable/**/mappings.xml",
                         "org/flowable/**/*.sql",
                         "org/flowable/**/*.xml",
                         "org/flowable/**/*.txt",
@@ -228,16 +231,16 @@ class FlowableHints implements RuntimeHintsRegistrar {
                     .map(ClassPathResource::new)
                     .toList());
 
-            var mappings = Set.of(
-                    new ClassPathResource("/org/flowable/idm/db/mapping/mappings.xml"),
-                    new ClassPathResource("/org/flowable/db/mapping/mappings.xml"),
-                    new ClassPathResource("/org/flowable/eventregistry/db/mapping/mappings.xml")
-            );
-            for (var r : mappings) {
-                if (r.exists()) {
-                    resources.addAll(mappers(r));
-                }
-            }
+//            var mappings = Set.of(
+//                    new ClassPathResource("/org/flowable/idm/db/mapping/mappings.xml"),
+//                    new ClassPathResource("/org/flowable/db/mapping/mappings.xml"),
+//                    new ClassPathResource("/org/flowable/eventregistry/db/mapping/mappings.xml")
+//            );
+//            for (var r : mappings) {
+//                if (r.exists()) {
+//                    resources.addAll(mappers(r));
+//                }
+//            }
 
             for (var resource : resources) {
                 if (resource.exists()) {
@@ -252,38 +255,38 @@ class FlowableHints implements RuntimeHintsRegistrar {
         }
     }
 
-    private Set<Resource> mappers(Resource mapping) throws Exception {
-        var resources = new HashSet<Resource>();
-        try (var in = new InputStreamReader(mapping.getInputStream())) {
-            var xml = FileCopyUtils.copyToString(in);
-            resources.addAll(mapperResources(xml));
-        }
-        resources.add(mapping);
-        return resources;
+//    private Set<Resource> mappers(Resource mapping) throws Exception {
+//        var resources = new HashSet<Resource>();
+//        try (var in = new InputStreamReader(mapping.getInputStream())) {
+//            var xml = FileCopyUtils.copyToString(in);
+//            resources.addAll(mapperResources(xml));
+//        }
+//        resources.add(mapping);
+//        return resources;
+//
+//    }
 
-    }
-
-    private Set<Resource> mapperResources(String xml) {
-        try {
-            var set = new HashSet<Resource>();
-            var dbf = DocumentBuilderFactory.newInstance();
-            var db = dbf.newDocumentBuilder();
-            var is = new InputSource(new StringReader(xml));
-            var doc = db.parse(is);
-            var mappersElement = (Element) doc.getElementsByTagName("mappers").item(0);
-            var mapperList = mappersElement.getElementsByTagName("mapper");
-            for (var i = 0; i < mapperList.getLength(); i++) {
-                var mapperElement = (Element) mapperList.item(i);
-                var resourceValue = mapperElement.getAttribute("resource");
-                set.add(new ClassPathResource(resourceValue));
-            }
-            return set;
-        }//
-        catch (Throwable throwable) {
-            throw new RuntimeException(throwable);
-        }
-
-    }
+//    private Set<Resource> mapperResources(String xml) {
+//        try {
+//            var set = new HashSet<Resource>();
+//            var dbf = DocumentBuilderFactory.newInstance();
+//            var db = dbf.newDocumentBuilder();
+//            var is = new InputSource(new StringReader(xml));
+//            var doc = db.parse(is);
+//            var mappersElement = (Element) doc.getElementsByTagName("mappers").item(0);
+//            var mapperList = mappersElement.getElementsByTagName("mapper");
+//            for (var i = 0; i < mapperList.getLength(); i++) {
+//                var mapperElement = (Element) mapperList.item(i);
+//                var resourceValue = mapperElement.getAttribute("resource");
+//                set.add(new ClassPathResource(resourceValue));
+//            }
+//            return set;
+//        }//
+//        catch (Throwable throwable) {
+//            throw new RuntimeException(throwable);
+//        }
+//
+//    }
 }
 
 @Service
