@@ -3,6 +3,8 @@ package com.example.flowable;
 import org.flowable.engine.ProcessEngine;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
+import org.flowable.engine.delegate.DelegateExecution;
+import org.flowable.engine.delegate.JavaDelegate;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -87,7 +89,7 @@ public class FlowableApplication {
 }
 
 @Service
-class EmailService {
+class EmailService implements JavaDelegate {
 
     private final ConcurrentHashMap<String, AtomicInteger> sends = new ConcurrentHashMap<>();
 
@@ -95,9 +97,13 @@ class EmailService {
         return this.sends.get(key);
     }
 
-    public void sendWelcomeEmail(String customerId, String email) {
+    @Override
+    public void execute(DelegateExecution execution) {
+        String customerId = (String) execution.getVariable("customerId");
+        String email = (String) execution.getVariable("email");
         System.out.println("sending welcome email for " + customerId + " to " + email);
         sends.computeIfAbsent(email, e -> new AtomicInteger());
         sends.get(email).incrementAndGet();
     }
+
 }

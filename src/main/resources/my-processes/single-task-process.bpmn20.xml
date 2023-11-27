@@ -20,7 +20,7 @@
                           targetRef="send-welcome-email-task"/>
 
         <serviceTask id="send-welcome-email-task"
-                     flowable:expression="#{emailService.sendWelcomeEmail(customerId, email)}"/>
+                     flowable:delegateExpression="#{emailService}" />
 
             <sequenceFlow sourceRef="send-welcome-email-task" targetRef="end"/>
 
