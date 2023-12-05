@@ -34,10 +34,9 @@ import org.springframework.util.ReflectionUtils;
  */
 class MybatisApplicationSpecificBeanFactoryInitializationAotProcessor implements BeanFactoryInitializationAotProcessor {
 
-	private final PathMatchingResourcePatternResolver resourcePatternResolver;
+	private final PathMatchingResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
 
-	MybatisApplicationSpecificBeanFactoryInitializationAotProcessor(PathMatchingResourcePatternResolver patternResolver) {
-		this.resourcePatternResolver = patternResolver;
+	MybatisApplicationSpecificBeanFactoryInitializationAotProcessor() {
 	}
 
 	private Collection<Resource> attemptToRegisterXmlResourcesForBasePackage(

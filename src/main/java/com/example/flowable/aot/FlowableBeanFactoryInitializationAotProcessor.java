@@ -1,5 +1,12 @@
 package com.example.flowable.aot;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.ibatis.javassist.util.proxy.ProxyFactory;
 import org.apache.ibatis.scripting.defaults.RawLanguageDriver;
 import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
@@ -34,25 +41,17 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 /**
  * @author Josh Long
  * @author Joram Barrez
  */
 class FlowableBeanFactoryInitializationAotProcessor implements BeanFactoryInitializationAotProcessor {
 
-    private final PathMatchingResourcePatternResolver resolver;
+    private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    FlowableBeanFactoryInitializationAotProcessor(PathMatchingResourcePatternResolver resolver) {
-        this.resolver = resolver;
+    FlowableBeanFactoryInitializationAotProcessor() {
     }
 
 

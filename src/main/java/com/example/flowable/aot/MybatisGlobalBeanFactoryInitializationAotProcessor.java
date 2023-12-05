@@ -111,12 +111,11 @@ import org.springframework.core.io.support.ResourcePatternResolver;
  */
 class MybatisGlobalBeanFactoryInitializationAotProcessor implements BeanFactoryInitializationAotProcessor {
 
-	private final PathMatchingResourcePatternResolver resourcePatternResolver;
+	private final PathMatchingResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
 
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
-	MybatisGlobalBeanFactoryInitializationAotProcessor(PathMatchingResourcePatternResolver patternResolver) {
-		this.resourcePatternResolver = patternResolver;
+	MybatisGlobalBeanFactoryInitializationAotProcessor() {
 	}
 
 	private void registerProxies(RuntimeHints hints) {

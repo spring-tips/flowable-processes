@@ -9,8 +9,8 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 class FlowableMybatisMappersBeanFactoryInitializationAotProcessor
         extends MybatisMappersBeanFactoryInitializationAotProcessor {
 
-    FlowableMybatisMappersBeanFactoryInitializationAotProcessor(PathMatchingResourcePatternResolver resolver) {
-        super(resolver);
+    FlowableMybatisMappersBeanFactoryInitializationAotProcessor() {
+
     }
 
     @Override
