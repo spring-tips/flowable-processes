@@ -20,7 +20,7 @@
     </parent>
 
     <properties>
-        <flowable.version>7.0.0</flowable.version>
+        <flowable.version>7.1.0-SNAPSHOT</flowable.version>
         <java.version>17</java.version>
         <reflections.version>0.10.2</reflections.version>
     </properties>
@@ -35,13 +35,8 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.mybatis.spring.boot</groupId>
-            <artifactId>mybatis-spring-boot-starter</artifactId>
-            <version>3.0.2</version>
-        </dependency>
-        <dependency>
             <groupId>org.flowable</groupId>
-            <artifactId>flowable-spring-boot-starter-process</artifactId>
+            <artifactId>flowable-spring-boot-starter</artifactId>
             <version>${flowable.version}</version>
         </dependency>
         <dependency>
@@ -54,13 +49,6 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-<!--
-        <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>${reflections.version}</version>
-        </dependency>-->
-
     </dependencies>
 
     <build>
